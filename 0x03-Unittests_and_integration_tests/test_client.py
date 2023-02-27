@@ -38,3 +38,26 @@ class TestGithubOrgClient(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class TestGithubOrgClient(TestCase):
+    
+    @parameterized.expand([
+        ("google", None, ["repo1", "repo2"]),
+        ("abc", "MIT", ["repo3"]),
+    ])
+    @mock.patch("client.get_json")
+    @mock.patch("client.GithubOrgClient._public_repos_url", new_callable=mock.PropertyMock)
+    def test_public_repos(self, org_name, license_key, expected_repos, mock_repos_url, mock_get_json):
+        mock_repos_url.return_value = "http://api.github.com/repos"
+        mock_get_json.return_value = [
+            {"name": "repo1"},
+            {"name": "repo2"},
+            {"name": "repo3", "license": {"key": "MIT"}},
+        ]
+        
+        client = GithubOrgClient(org_name)
+        repos = client.public_repos(license=license_key)
+        
+        mock_repos_url.assert_called_once()
+        mock_get_json.assert_called_once()
+        self.assertEqual(repos, expected_repos)
